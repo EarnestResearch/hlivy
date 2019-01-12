@@ -1,0 +1,45 @@
+name: hlivy
+version: '0.1.0.0'
+author: Daniel Donohue
+maintainer: ddonohue@earnestresearch.com
+copyright: 2018 Earnest Research
+license: BSD3
+homepage: https://github.com/EarnestResearch/hlivy
+
+default-extensions:
+  - BangPatterns
+  - DataKinds
+  - DefaultSignatures
+  - DeriveDataTypeable
+  - GeneralizedNewtypeDeriving
+  - LambdaCase
+  - OverloadedLabels
+  - OverloadedLists
+  - OverloadedStrings
+  - PartialTypeSignatures
+  - PatternSynonyms
+  - QuasiQuotes
+  - RecordWildCards
+  - ScopedTypeVariables
+  - TemplateHaskell
+  - TypeOperators
+  - ViewPatterns
+
+library:
+  source-dirs: src
+  ghc-options:
+    - -Wall
+    - -fno-warn-type-defaults
+
+executables:
+  hlivy:
+    main: Main.hs
+    source-dirs: app
+    ghc-options:
+      - -Wall
+      - -fno-warn-type-defaults
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - hlivy
