@@ -15,7 +15,7 @@ import           Network.Livy.Types
 parseHttp
   :: (LivyRequest b, FromJSON a)
   => b -- ^ A 'LivyReqest'.
-  -> Env -- ^
+  -> Env -- ^ The environment needed to make the request.
   -> IO (Either LivyError a)
 parseHttp req env = do
   let req' = request req & setHost (env ^. envHost) & setPort (env ^. envPort)
