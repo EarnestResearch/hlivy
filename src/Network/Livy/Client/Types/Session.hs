@@ -1,29 +1,42 @@
 {-# LANGUAGE LambdaCase      #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Network.Livy.Client.Types.Session where
+module Network.Livy.Client.Types.Session
+  ( -- * Interactive sessions.
+    Session (..)
+  , SessionKind (..)
+  , SessionState (..)
+    -- ** Lenses.
+  , sId
+  , sAppId
+  , sOwner
+  , sProxyUser
+  , sKind
+  , sLog
+  , sState
+  , sAppInfo
+  ) where
 
-import Control.Lens hiding ((.=))
-import Data.Aeson
-import Data.Text (Text, pack, unpack)
-import Data.Typeable
+import           Control.Lens
+import           Data.Aeson
+import           Data.Aeson.TH
+import           Data.Text (Text)
+import qualified Data.Text as T
+import           Data.Typeable
+
+import           Network.Livy.Client.Internal.JSON
 
 
+-- | The kind of Livy session.
 data SessionKind
-  = SparkSession
-  | PySparkSession
-  | SparkRSession
-  | SQLSession
-    deriving (Eq, Typeable)
-
-instance Show SessionKind where
-  show SparkSession   = "spark"
-  show PySparkSession = "pyspark"
-  show SparkRSession  = "sparkr"
-  show SQLSession     = "sql"
+  = SparkSession -- ^ A Scala Spark session.
+  | PySparkSession -- ^ A PySpark session.
+  | SparkRSession -- ^ A SparkR session.
+  | SQLSession -- ^ A Spark SQL session.
+    deriving (Eq, Show, Typeable)
 
 instance ToJSON SessionKind where
-  toJSON = String . pack . show
+  toJSON = String . T.toLower . T.reverse . T.drop 7 . T.reverse . T.pack . show
 
 instance FromJSON SessionKind where
   parseJSON = withText "SessionKind" $ \case
@@ -31,32 +44,30 @@ instance FromJSON SessionKind where
     "pyspark" -> return PySparkSession
     "sparkr"  -> return SparkRSession
     "sql"     -> return SQLSession
-    t         -> fail . unpack $ "Unknown session type: " <> t
+    t         -> fail . T.unpack $ "Unknown session type: " <> t
 
 
+-- ^ The present state of a session.
 data SessionState
-  = SessionNotStarted
-  | SessionStarting
-  | SessionIdle
-  | SessionBusy
-  | SessionShuttingDown
-  | SessionError
-  | SessionDead
-  | SessionSuccess
-    deriving (Eq, Typeable)
-
-instance Show SessionState where
-  show SessionNotStarted   = "not_started"
-  show SessionStarting     = "starting"
-  show SessionIdle         = "idle"
-  show SessionBusy         = "busy"
-  show SessionShuttingDown = "shutting_down"
-  show SessionError        = "error"
-  show SessionDead         = "dead"
-  show SessionSuccess      = "success"
+  = SessionNotStarted -- ^ Session has not been started.
+  | SessionStarting -- ^ Session is starting.
+  | SessionIdle -- ^ Session is waiting for input.
+  | SessionBusy -- ^ Session is executing a statement.
+  | SessionShuttingDown -- ^ Session is shutting down.
+  | SessionError -- ^ Session errored out.
+  | SessionDead -- ^ Session has exited.
+  | SessionSuccess -- ^ Session is successfully stopped.
+    deriving (Eq, Show, Typeable)
 
 instance ToJSON SessionState where
-  toJSON = String . pack . show
+  toJSON SessionNotStarted   = String "not_started"
+  toJSON SessionStarting     = String "starting"
+  toJSON SessionIdle         = String "idle"
+  toJSON SessionBusy         = String "busy"
+  toJSON SessionShuttingDown = String "shutting_down"
+  toJSON SessionError        = String "error"
+  toJSON SessionDead         = String "dead"
+  toJSON SessionSuccess      = String "success"
 
 instance FromJSON SessionState where
   parseJSON = withText "SessionState" $ \case
@@ -68,41 +79,20 @@ instance FromJSON SessionState where
     "error"         -> return SessionError
     "dead"          -> return SessionDead
     "success"       -> return SessionSuccess
-    s               -> fail . unpack $ "Unknown session state: " <> s
+    s               -> fail . T.unpack $ "Unknown session state: " <> s
 
 
+-- ^ An interactive session with Livy.
 data Session = Session
-  { _sId        :: !Int
-  , _sAppId     :: !Text
-  , _sOwner     :: !Text
-  , _sProxyUser :: !Text
-  , _sKind      :: !SessionKind
-  , _sLog       :: ![Text]
-  , _sState     :: !SessionState
-  , _sAppInfo   :: !Object
+  { _sId        :: !Int -- ^ The session id.
+  , _sAppId     :: !Text -- ^ The application id of this session.
+  , _sOwner     :: !Text -- ^ Remote user who submitted this session.
+  , _sProxyUser :: !Text -- ^ User to impersonate when running.
+  , _sKind      :: !SessionKind -- ^ Session kind (spark, pyspark, sparkr, sql).
+  , _sLog       :: ![Text] -- ^ The log lines.
+  , _sState     :: !SessionState -- ^ The session state.
+  , _sAppInfo   :: !Object -- ^ The detailed application info.
   } deriving (Eq, Show, Typeable)
 
 makeLenses ''Session
-
-instance ToJSON Session where
-  toJSON s = object
-    [ "id"        .= (s ^. sId)
-    , "appId"     .= (s ^. sAppId)
-    , "owner"     .= (s ^. sOwner)
-    , "proxyUser" .= (s ^. sProxyUser)
-    , "kind"      .= (s ^. sKind)
-    , "log"       .= (s ^. sLog)
-    , "state"     .= (s ^. sState)
-    , "appInfo"   .= (s ^. sAppInfo)
-    ]
-
-instance FromJSON Session where
-  parseJSON = withObject "Session" $ \o -> Session
-    <$> o .: "id"
-    <*> o .: "appId"
-    <*> o .: "owner"
-    <*> o .: "proxyUser"
-    <*> o .: "kind"
-    <*> o .: "log"
-    <*> o .: "state"
-    <*> o .: "appInfo"
+deriveJSON (recordPrefixOptions 2) ''Session

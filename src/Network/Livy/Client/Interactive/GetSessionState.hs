@@ -1,14 +1,23 @@
-{-# LANGUAGE DeriveGeneric   #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies    #-}
 
-module Network.Livy.Client.GetSessionState where
+module Network.Livy.Client.Interactive.GetSessionState
+  ( -- * The request.
+    GetSessionState (..)
+  , getSessionState
+    -- ** Request lenses.
+  , gsstSessionId
+    -- * The response.
+  , GetSessionStateResponse (..)
+    -- ** Response lenses.
+  , gsstrSessionId
+  , gsstrState
+  ) where
 
-import           Control.Lens hiding ((.=))
+import           Control.Lens
 import           Data.Aeson.TH
 import qualified Data.ByteString.Char8 as C
 import           Data.Typeable
-import           GHC.Generics (Generic)
 
 import           Network.Livy.Client.Internal.JSON
 import           Network.Livy.Client.Types.Session
@@ -17,12 +26,14 @@ import           Network.Livy.Types
 
 
 -- | The 'GetSessionState' request object.
-newtype GetSessionState = GetSessionState { _gsstSessionId :: Int } deriving (Eq, Show, Typeable)
+newtype GetSessionState = GetSessionState
+  { _gsstSessionId :: Int -- ^ Id of the session.
+  } deriving (Eq, Show, Typeable)
 
 makeLenses ''GetSessionState
 
 instance ToPath GetSessionState where
-  toPath s = C.pack $ "/sessions/" <> show (s ^. gsstSessionId) <> "/state"
+  toPath r = C.pack $ "/sessions/" <> show (r ^. gsstSessionId) <> "/state"
 
 instance LivyRequest GetSessionState where
   request = get
@@ -35,9 +46,9 @@ getSessionState = GetSessionState
 
 -- | The 'GetSessionState' response body.
 data GetSessionStateResponse = GetSessionStateResponse
-  { _gsstrSessionId :: !(Maybe Int)
-  , _gsstrState     :: !(Maybe SessionState)
-  } deriving (Eq, Show, Typeable, Generic)
+  { _gsstrSessionId :: !(Maybe Int) -- ^ Session id.
+  , _gsstrState     :: !(Maybe SessionState) -- ^ The current state of the session.
+  } deriving (Eq, Show, Typeable)
 
 makeLenses ''GetSessionStateResponse
 deriveFromJSON (recordPrefixOptions 6) ''GetSessionStateResponse

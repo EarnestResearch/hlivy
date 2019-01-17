@@ -1,4 +1,6 @@
-module Network.Livy.Client.Internal.JSON where
+module Network.Livy.Client.Internal.JSON
+  ( recordPrefixOptions
+  ) where
 
 import           Data.Aeson
 import qualified Data.Text as T

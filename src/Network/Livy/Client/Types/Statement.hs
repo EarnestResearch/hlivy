@@ -1,33 +1,43 @@
 {-# LANGUAGE LambdaCase      #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Network.Livy.Client.Types.Statement where
+module Network.Livy.Client.Types.Statement
+  ( -- * Statements for interactive sessions.
+    Statement (..)
+  , StatementState (..)
+  , StatementOutput (..)
+    -- ** Lenses.
+  , stoStatus
+  , stoExecutionCount
+  , stoData
+  , stId
+  , stCode
+  , stState
+  , stOutput
+  ) where
 
-import Control.Lens hiding ((.=))
-import Data.Aeson
-import Data.Text (Text, pack, unpack)
-import Data.Typeable
+import           Control.Lens hiding ((.=))
+import           Data.Aeson
+import           Data.Aeson.TH
+import           Data.Text (Text)
+import qualified Data.Text as T
+import           Data.Typeable
+
+import           Network.Livy.Client.Internal.JSON
 
 
+-- | The present state of a submitted 'Statement'.
 data StatementState
-  = StatementWaiting
-  | StatementRunning
-  | StatementAvailable
-  | StatementError
-  | StatementCancelling
-  | StatementCancelled
-    deriving (Eq, Typeable)
-
-instance Show StatementState where
-  show StatementWaiting    = "waiting"
-  show StatementRunning    = "running"
-  show StatementAvailable  = "available"
-  show StatementError      = "error"
-  show StatementCancelling = "cancelling"
-  show StatementCancelled  = "cancelled"
+  = StatementWaiting -- ^ Statement is enqueued but execution hasn't started.
+  | StatementRunning -- ^ Statement is currently running.
+  | StatementAvailable -- ^ Statement has a response ready.
+  | StatementError -- ^ Statement failed.
+  | StatementCancelling -- ^ Statement is being cancelled.
+  | StatementCancelled -- ^ Statement is cancelled.
+    deriving (Eq, Show, Typeable)
 
 instance ToJSON StatementState where
-  toJSON = String . pack . show
+  toJSON = String . T.toLower . T.drop 9 .T.pack . show
 
 instance FromJSON StatementState where
   parseJSON = withText "StatementState" $ \case
@@ -37,13 +47,14 @@ instance FromJSON StatementState where
     "error"      -> return StatementError
     "cancelling" -> return StatementCancelling
     "cancelled"  -> return StatementCancelled
-    s            -> fail . unpack $ "Unknown statement state: " <> s
+    s            -> fail . T.unpack $ "Unknown statement state: " <> s
 
 
+-- | The output of a completed statement.
 data StatementOutput = StatementOutput
-  { _stoStatus         :: !Text
-  , _stoExecutionCount :: !Integer
-  , _stoData           :: !Object
+  { _stoStatus         :: !Text -- ^ Execution status.
+  , _stoExecutionCount :: !Integer -- ^ A monotonically increasing number.
+  , _stoData           :: !Object -- ^ Statement output.
   } deriving (Eq, Show, Typeable)
 
 makeLenses ''StatementOutput
@@ -62,19 +73,13 @@ instance FromJSON StatementOutput where
     <*> o .: "data"
 
 
+-- ^ A 'Statement' represents the result of an execution statement.
 data Statement = Statement
-  { _stId     :: !Int
-  , _stCode   :: !Text
-  , _stState  :: !StatementState
-  , _stOutput :: !StatementOutput
+  { _stId     :: !Int -- ^ The statement id.
+  , _stCode   :: !Text -- ^ The execution code.
+  , _stState  :: !StatementState -- ^ The execution state.
+  , _stOutput :: !StatementOutput -- ^ The execution output.
   } deriving (Eq, Show, Typeable)
 
 makeLenses ''Statement
-
-instance ToJSON Statement where
-  toJSON (Statement i c s o) = object
-    [ "id"     .= i
-    , "code"   .= c
-    , "state"  .= s
-    , "output" .= o
-    ]
+deriveJSON (recordPrefixOptions 3) ''Statement

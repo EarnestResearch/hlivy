@@ -1,14 +1,25 @@
-{-# LANGUAGE DeriveGeneric   #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies    #-}
 
-module Network.Livy.Client.GetSessions where
+module Network.Livy.Client.Interactive.GetSessions
+  ( -- * The request.
+    GetSessions (..)
+  , getSessions
+    -- ** Request lenses.
+  , gssFrom
+  , gssSize
+    -- * The request
+  , GetSessionsResponse (..)
+    -- ** Response lenses.
+  , gssrFrom
+  , gssrSize
+  , gssrSessions
+  ) where
 
 import           Control.Lens
 import           Data.Aeson.TH
 import qualified Data.ByteString.Char8 as C
 import           Data.Typeable
-import           GHC.Generics (Generic)
 
 import           Network.Livy.Client.Internal.JSON
 import           Network.Livy.Client.Types.Session
@@ -18,8 +29,8 @@ import           Network.Livy.Types
 
 -- | The 'GetSessions' request object.
 data GetSessions = GetSessions
-  { _gssFrom :: Maybe Int
-  , _gssSize :: Maybe Int
+  { _gssFrom :: Maybe Int -- ^ The start index to fetch sessions.
+  , _gssSize :: Maybe Int -- ^ Number of sessions to fetch.
   } deriving (Eq, Show, Typeable)
 
 makeLenses ''GetSessions
@@ -28,9 +39,9 @@ instance ToPath GetSessions where
   toPath = const "/sessions"
 
 instance ToQuery GetSessions where
-  toQuery req = [ ("from", C.pack . show <$> req ^. gssFrom)
-                , ("size", C.pack . show <$> req ^. gssSize)
-                ]
+  toQuery r = [ ("from", C.pack . show <$> r ^. gssFrom)
+              , ("size", C.pack . show <$> r ^. gssSize)
+              ]
 
 instance LivyRequest GetSessions where
   request = getQuery
@@ -43,10 +54,10 @@ getSessions = GetSessions Nothing Nothing
 
 -- | The 'GetSessions' response body.
 data GetSessionsResponse = GetSessionsResponse
-  { _gssrFrom     :: !Int
-  , _gssrSize     :: !Int
-  , _gssrSessions :: ![Session]
-  } deriving (Eq, Show, Generic)
+  { _gssrFrom     :: !Int -- ^ The start index to fetch sessions.
+  , _gssrSize     :: !Int -- ^ Number of sessions to fetch.
+  , _gssrSessions :: ![Session] -- ^ 'Session' list.
+  } deriving (Eq, Show, Typeable)
 
 makeLenses ''GetSessionsResponse
 deriveFromJSON (recordPrefixOptions 5) ''GetSessionsResponse

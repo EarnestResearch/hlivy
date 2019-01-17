@@ -1,14 +1,22 @@
-{-# LANGUAGE DeriveGeneric   #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies    #-}
 
-module Network.Livy.Client.GetSession where
+module Network.Livy.Client.Interactive.GetSession
+  ( -- * The request.
+    GetSession (..)
+  , getSession
+    -- ** Request lenses.
+  , gsSessionId
+    -- * The response.
+  , GetSessionResponse (..)
+    -- ** Response lenses.
+  , gsSession
+  ) where
 
 import           Control.Lens
 import           Data.Aeson.TH
 import qualified Data.ByteString.Char8 as C
 import           Data.Typeable
-import           GHC.Generics (Generic)
 
 import           Network.Livy.Client.Internal.JSON
 import           Network.Livy.Client.Types.Session
@@ -17,12 +25,14 @@ import           Network.Livy.Types
 
 
 -- | The 'GetSession' request object.
-newtype GetSession = GetSession { _gsSessionId :: Int } deriving (Eq, Show, Typeable)
+newtype GetSession = GetSession
+  { _gsSessionId :: Int -- ^ Id of the session.
+  } deriving (Eq, Show, Typeable)
 
 makeLenses ''GetSession
 
 instance ToPath GetSession where
-  toPath s = C.pack $ "/sessions/" <> show (s ^. gsSessionId)
+  toPath r = C.pack $ "/sessions/" <> show (r ^. gsSessionId)
 
 instance LivyRequest GetSession where
   request = get
@@ -35,8 +45,8 @@ getSession = GetSession
 
 -- | The 'GetSession' response body.
 newtype GetSessionResponse = GetSessionResponse
-  { _gsSession :: Session
-  } deriving (Eq, Show, Typeable, Generic)
+  { _gsSession :: Session -- ^ The 'Session'.
+  } deriving (Eq, Show, Typeable)
 
 makeLenses ''GetSessionResponse
 deriveFromJSON (recordPrefixOptions 3) ''GetSessionResponse
