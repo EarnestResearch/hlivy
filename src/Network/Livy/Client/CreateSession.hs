@@ -6,10 +6,12 @@ module Network.Livy.Client.CreateSession where
 
 import Control.Lens hiding ((.=))
 import Data.Aeson
+import Data.Aeson.TH
 import Data.Text (Text)
 import Data.Typeable
 import GHC.Generics (Generic)
 
+import Network.Livy.Client.Internal.JSON
 import Network.Livy.Client.Types.Session
 import Network.Livy.Request
 import Network.Livy.Types
@@ -35,26 +37,7 @@ data CreateSession = CreateSession
   } deriving (Eq, Show, Typeable, Generic)
 
 makeLenses ''CreateSession
-
-instance ToJSON CreateSession where
-  toEncoding = genericToEncoding defaultOptions { omitNothingFields = True }
-  toJSON c = object
-    [ "kind"                     .= (c ^. csKind)
-    , "proxyUser"                .= (c ^. csProxyUser)
-    , "jars"                     .= (c ^. csJars)
-    , "pyFiles"                  .= (c ^. csPyFiles)
-    , "files"                    .= (c ^. csFiles)
-    , "driverMemory"             .= (c ^. csDriverMemory)
-    , "driverCores"              .= (c ^. csDriverCores)
-    , "executorMemory"           .= (c ^. csExecutorMemory)
-    , "executorCores"            .= (c ^. csExecutorCores)
-    , "numExecutors"             .= (c ^. csNumExecutors)
-    , "archives"                 .= (c ^. csArchives)
-    , "queue"                    .= (c ^. csQueue)
-    , "name"                     .= (c ^. csName)
-    , "conf"                     .= (c ^. csConf)
-    , "heartbeatTimeoutInSecond" .= (c ^. csHeartbeatTimeoutInSecond)
-    ]
+deriveToJSON ((recordPrefixOptions 3) { omitNothingFields = True }) ''CreateSession
 
 instance ToPath CreateSession where
   toPath = const "/sessions"
@@ -85,11 +68,10 @@ createSession k = CreateSession
 
 
 -- | The 'CreateSession' response body.
-newtype CreateSessionResponse =
-  CreateSessionRespons Session deriving (Eq, Show, Typeable, Generic)
+newtype CreateSessionResponse = CreateSessionResponse
+  {_csrSession :: Session
+  } deriving (Eq, Show, Typeable, Generic)
 
 makeLenses ''CreateSessionResponse
-
-instance FromJSON CreateSessionResponse
-
+deriveFromJSON (recordPrefixOptions 4) ''CreateSessionResponse
 type instance LivyResponse CreateSession = CreateSessionResponse

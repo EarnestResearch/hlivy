@@ -1,13 +1,16 @@
+{-# LANGUAGE DeriveGeneric   #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies    #-}
 
 module Network.Livy.Client.GetSessionState where
 
 import           Control.Lens hiding ((.=))
-import           Data.Aeson
+import           Data.Aeson.TH
 import qualified Data.ByteString.Char8 as C
 import           Data.Typeable
+import           GHC.Generics (Generic)
 
+import           Network.Livy.Client.Internal.JSON
 import           Network.Livy.Client.Types.Session
 import           Network.Livy.Request
 import           Network.Livy.Types
@@ -34,11 +37,8 @@ getSessionState = GetSessionState
 data GetSessionStateResponse = GetSessionStateResponse
   { _gsstrSessionId :: !(Maybe Int)
   , _gsstrState     :: !(Maybe SessionState)
-  } deriving (Eq, Show, Typeable)
+  } deriving (Eq, Show, Typeable, Generic)
 
-instance FromJSON GetSessionStateResponse where
-  parseJSON = withObject "GetSessionStateResponse" $ \o -> GetSessionStateResponse
-    <$> o .: "id"
-    <*> o .: "state"
-
+makeLenses ''GetSessionStateResponse
+deriveFromJSON (recordPrefixOptions 6) ''GetSessionStateResponse
 type instance LivyResponse GetSessionState = GetSessionStateResponse

@@ -5,11 +5,12 @@
 module Network.Livy.Client.GetSession where
 
 import           Control.Lens
-import           Data.Aeson
+import           Data.Aeson.TH
 import qualified Data.ByteString.Char8 as C
 import           Data.Typeable
 import           GHC.Generics (Generic)
 
+import           Network.Livy.Client.Internal.JSON
 import           Network.Livy.Client.Types.Session
 import           Network.Livy.Request
 import           Network.Livy.Types
@@ -33,10 +34,10 @@ getSession = GetSession
 
 
 -- | The 'GetSession' response body.
-newtype GetSessionResponse = GetSessionResponse Session deriving (Eq, Show, Typeable, Generic)
+newtype GetSessionResponse = GetSessionResponse
+  { _gsSession :: Session
+  } deriving (Eq, Show, Typeable, Generic)
 
 makeLenses ''GetSessionResponse
-
-instance FromJSON GetSessionResponse where
-
+deriveFromJSON (recordPrefixOptions 3) ''GetSessionResponse
 type instance LivyResponse GetSession = GetSessionResponse

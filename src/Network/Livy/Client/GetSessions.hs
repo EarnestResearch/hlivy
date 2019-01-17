@@ -1,13 +1,16 @@
+{-# LANGUAGE DeriveGeneric   #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies    #-}
 
 module Network.Livy.Client.GetSessions where
 
 import           Control.Lens
-import           Data.Aeson
+import           Data.Aeson.TH
 import qualified Data.ByteString.Char8 as C
 import           Data.Typeable
+import           GHC.Generics (Generic)
 
+import           Network.Livy.Client.Internal.JSON
 import           Network.Livy.Client.Types.Session
 import           Network.Livy.Request
 import           Network.Livy.Types
@@ -43,14 +46,8 @@ data GetSessionsResponse = GetSessionsResponse
   { _gssrFrom     :: !Int
   , _gssrSize     :: !Int
   , _gssrSessions :: ![Session]
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Generic)
 
 makeLenses ''GetSessionsResponse
-
-instance FromJSON GetSessionsResponse where
-  parseJSON = withObject "GetSessionsResponse" $ \o -> GetSessionsResponse
-    <$> o .: "from"
-    <*> o .: "size"
-    <*> o .: "sessions"
-
+deriveFromJSON (recordPrefixOptions 5) ''GetSessionsResponse
 type instance LivyResponse GetSessions = GetSessionsResponse

@@ -69,6 +69,8 @@ data Statement = Statement
   , _stOutput :: !StatementOutput
   } deriving (Eq, Show, Typeable)
 
+makeLenses ''Statement
+
 instance ToJSON Statement where
   toJSON (Statement i c s o) = object
     [ "id"     .= i
