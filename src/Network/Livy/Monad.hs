@@ -2,33 +2,49 @@
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Network.Livy.Monad where
+module Network.Livy.Monad
+  ( -- * Running Livy actions
+    Livy
+  , LivyT (..)
+  , LivyConstraint
+  , runLivy
+  , runLivyT
+  ) where
 
+import Control.Lens
+import Control.Monad.Catch
 import Control.Monad.Reader
+import Control.Monad.Trans.Resource
 import Data.Aeson
 
-import Network.Livy.Response
+import Network.Livy.Env
 import Network.Livy.Types
 
 
-newtype LivyT' r m a = LivyT' { unLivyT :: ReaderT r m a }
-  deriving (Applicative, Functor, Monad, MonadIO, MonadReader r)
+-- | A specialization of 'LivyT'.
+type Livy = LivyT Env (ResourceT IO)
 
 
--- | 'LivyT' with a default environment.
-type LivyT m a = LivyT' Env m a
+-- | Run the 'Livy' monad.
+runLivy :: HasEnv r => r -> Livy a -> IO a
+runLivy e = runResourceT . runLivyT (e ^. environment)
 
 
--- | Run a Livy action with the given environment.
-runLivyT :: HasEnv r => r -> LivyT' r m a -> m a
-runLivyT r (LivyT' m) = runReaderT m r
+-- | 'LivyT' transformer.
+newtype LivyT r m a = LivyT { unLivyT :: ReaderT r m a }
+  deriving ( Applicative, Functor, Monad
+           , MonadTrans, MonadIO, MonadReader r
+           , MonadThrow, MonadCatch, MonadResource
+           )
+
+
+-- | Run a LivyT action with the given environment.
+runLivyT :: HasEnv r => r -> LivyT r m a -> m a
+runLivyT r (LivyT m) = runReaderT m r
 
 
 -- | An alias for the constraints required to send a request to Livy.
 type LivyConstraint r m a =
-  (HasEnv r, MonadIO m, MonadReader r m, LivyRequest a, FromJSON (LivyResponse a))
-
-
--- | Send a request, returning the associated response if successful.
-send :: LivyConstraint r m a => a -> m (Either LivyError (LivyResponse a))
-send req = reader hasEnv >>= liftIO . parseHttp req
+  ( HasEnv r, MonadIO m, MonadThrow m, MonadCatch m
+  , MonadReader r m, LivyRequest a, FromJSON (LivyResponse a)
+  )

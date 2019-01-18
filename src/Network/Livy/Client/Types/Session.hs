@@ -1,12 +1,14 @@
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TemplateHaskell            #-}
 
 module Network.Livy.Client.Types.Session
-  ( -- * Interactive sessions.
+  ( -- * Interactive sessions
     Session (..)
+  , SessionId (..)
   , SessionKind (..)
   , SessionState (..)
-    -- ** Lenses.
+  , SessionAppInfo
+    -- ** Lenses
   , sId
   , sAppId
   , sOwner
@@ -20,11 +22,13 @@ module Network.Livy.Client.Types.Session
 import           Control.Lens
 import           Data.Aeson
 import           Data.Aeson.TH
+import qualified Data.HashMap.Strict as Map
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Typeable
 
 import           Network.Livy.Client.Internal.JSON
+import           Network.Livy.Internal.Text
 
 
 -- | The kind of Livy session.
@@ -33,65 +37,80 @@ data SessionKind
   | PySparkSession -- ^ A PySpark session.
   | SparkRSession -- ^ A SparkR session.
   | SQLSession -- ^ A Spark SQL session.
-    deriving (Eq, Show, Typeable)
+  | SharedSession -- ^ A session that supports all types.
+    deriving (Bounded, Enum, Eq, Show, Typeable)
+
+instance ToText SessionKind where
+  toText = T.toLower . T.reverse . T.drop 7 . T.reverse . T.pack . show
 
 instance ToJSON SessionKind where
-  toJSON = String . T.toLower . T.reverse . T.drop 7 . T.reverse . T.pack . show
+  toJSON = String . toText
 
 instance FromJSON SessionKind where
-  parseJSON = withText "SessionKind" $ \case
-    "spark"   -> return SparkSession
-    "pyspark" -> return PySparkSession
-    "sparkr"  -> return SparkRSession
-    "sql"     -> return SQLSession
-    t         -> fail . T.unpack $ "Unknown session type: " <> t
+  parseJSON = withText "SessionKind" $ \t ->
+    case lookup t toTextLookup of
+      Just sk -> return sk
+      Nothing -> fail . T.unpack $ "Unknown session type: " <> t
 
 
 -- ^ The present state of a session.
 data SessionState
   = SessionNotStarted -- ^ Session has not been started.
   | SessionStarting -- ^ Session is starting.
+  | SessionRecovering -- ^ Session is recovering.
   | SessionIdle -- ^ Session is waiting for input.
+  | SessionRunning -- ^ Session is running.
   | SessionBusy -- ^ Session is executing a statement.
   | SessionShuttingDown -- ^ Session is shutting down.
   | SessionError -- ^ Session errored out.
   | SessionDead -- ^ Session has exited.
+  | SessionKilled -- ^ Session is killed.
   | SessionSuccess -- ^ Session is successfully stopped.
-    deriving (Eq, Show, Typeable)
+    deriving (Bounded, Enum, Eq, Show, Typeable)
+
+instance ToText SessionState where
+  toText SessionNotStarted   = "not_started"
+  toText SessionStarting     = "starting"
+  toText SessionRecovering   = "recovering"
+  toText SessionIdle         = "idle"
+  toText SessionRunning      = "running"
+  toText SessionBusy         = "busy"
+  toText SessionShuttingDown = "shutting_down"
+  toText SessionError        = "error"
+  toText SessionDead         = "dead"
+  toText SessionKilled       = "killed"
+  toText SessionSuccess      = "success"
 
 instance ToJSON SessionState where
-  toJSON SessionNotStarted   = String "not_started"
-  toJSON SessionStarting     = String "starting"
-  toJSON SessionIdle         = String "idle"
-  toJSON SessionBusy         = String "busy"
-  toJSON SessionShuttingDown = String "shutting_down"
-  toJSON SessionError        = String "error"
-  toJSON SessionDead         = String "dead"
-  toJSON SessionSuccess      = String "success"
+  toJSON = String . toText
 
 instance FromJSON SessionState where
-  parseJSON = withText "SessionState" $ \case
-    "not_started"   -> return SessionNotStarted
-    "starting"      -> return SessionStarting
-    "idle"          -> return SessionIdle
-    "busy"          -> return SessionBusy
-    "shutting_down" -> return SessionShuttingDown
-    "error"         -> return SessionError
-    "dead"          -> return SessionDead
-    "success"       -> return SessionSuccess
-    s               -> fail . T.unpack $ "Unknown session state: " <> s
+  parseJSON = withText "SessionState" $ \t ->
+    case lookup t toTextLookup of
+      Just st -> return st
+      Nothing -> fail . T.unpack $ "Unknown session state: " <> t
+
+
+-- | The id of this interactive session.
+newtype SessionId = SessionId Int
+  deriving (Eq, Show, Typeable, ToText, ToJSON, FromJSON)
+
+
+-- | Detailed application information.
+
+type SessionAppInfo = Map.HashMap Text (Maybe Text)
 
 
 -- ^ An interactive session with Livy.
 data Session = Session
-  { _sId        :: !Int -- ^ The session id.
-  , _sAppId     :: !Text -- ^ The application id of this session.
-  , _sOwner     :: !Text -- ^ Remote user who submitted this session.
-  , _sProxyUser :: !Text -- ^ User to impersonate when running.
-  , _sKind      :: !SessionKind -- ^ Session kind (spark, pyspark, sparkr, sql).
+  { _sId        :: !SessionId -- ^ The session id.
+  , _sAppId     :: !(Maybe Text) -- ^ The application id of this session.
+  , _sOwner     :: !(Maybe Text) -- ^ Remote user who submitted this session.
+  , _sProxyUser :: !(Maybe Text) -- ^ User to impersonate when running.
+  , _sKind      :: !SessionKind -- ^ Session kind (spark, pyspark, sparkr, sql, shared).
   , _sLog       :: ![Text] -- ^ The log lines.
   , _sState     :: !SessionState -- ^ The session state.
-  , _sAppInfo   :: !Object -- ^ The detailed application info.
+  , _sAppInfo   :: !SessionAppInfo -- ^ The detailed application info.
   } deriving (Eq, Show, Typeable)
 
 makeLenses ''Session

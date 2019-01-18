@@ -1,12 +1,13 @@
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TemplateHaskell            #-}
 
 module Network.Livy.Client.Types.Statement
-  ( -- * Statements for interactive sessions.
+  ( -- * Statements for interactive sessions
     Statement (..)
+  , StatementId (..)
   , StatementState (..)
   , StatementOutput (..)
-    -- ** Lenses.
+    -- ** Lenses
   , stoStatus
   , stoExecutionCount
   , stoData
@@ -19,11 +20,13 @@ module Network.Livy.Client.Types.Statement
 import           Control.Lens hiding ((.=))
 import           Data.Aeson
 import           Data.Aeson.TH
+import qualified Data.HashMap.Strict as Map
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Typeable
 
 import           Network.Livy.Client.Internal.JSON
+import           Network.Livy.Internal.Text
 
 
 -- | The present state of a submitted 'Statement'.
@@ -34,27 +37,30 @@ data StatementState
   | StatementError -- ^ Statement failed.
   | StatementCancelling -- ^ Statement is being cancelled.
   | StatementCancelled -- ^ Statement is cancelled.
-    deriving (Eq, Show, Typeable)
+    deriving (Bounded, Enum, Eq, Show, Typeable)
+
+instance ToText StatementState where
+  toText = T.toLower . T.drop 9 . T.pack . show
 
 instance ToJSON StatementState where
-  toJSON = String . T.toLower . T.drop 9 .T.pack . show
+  toJSON = String . toText
 
 instance FromJSON StatementState where
-  parseJSON = withText "StatementState" $ \case
-    "waiting"    -> return StatementWaiting
-    "running"    -> return StatementRunning
-    "available"  -> return StatementAvailable
-    "error"      -> return StatementError
-    "cancelling" -> return StatementCancelling
-    "cancelled"  -> return StatementCancelled
-    s            -> fail . T.unpack $ "Unknown statement state: " <> s
+  parseJSON = withText "StatementState" $ \t ->
+    case lookup t toTextLookup of
+      Just st -> return st
+      Nothing -> fail . T.unpack $ "Unknown statement state: " <> t
+
+
+-- | Statement output.
+type StatementData = Map.HashMap Text (Maybe Text)
 
 
 -- | The output of a completed statement.
 data StatementOutput = StatementOutput
-  { _stoStatus         :: !Text -- ^ Execution status.
-  , _stoExecutionCount :: !Integer -- ^ A monotonically increasing number.
-  , _stoData           :: !Object -- ^ Statement output.
+  { _stoStatus         :: !(Maybe Text) -- ^ Execution status.
+  , _stoExecutionCount :: !(Maybe Integer) -- ^ A monotonically increasing number.
+  , _stoData           :: !(Maybe StatementData) -- ^ Statement output.
   } deriving (Eq, Show, Typeable)
 
 makeLenses ''StatementOutput
@@ -68,18 +74,23 @@ instance ToJSON StatementOutput where
 
 instance FromJSON StatementOutput where
   parseJSON = withObject "StatementOutput" $ \o -> StatementOutput
-    <$> o .: "status"
-    <*> o .: "execution_count"
-    <*> o .: "data"
+    <$> o .:? "status"
+    <*> o .:? "execution_count"
+    <*> o .:? "data"
+
+
+-- | The id of this statement.
+newtype StatementId = StatementId Int
+  deriving (Eq, Show, Typeable, ToText, ToJSON, FromJSON)
 
 
 -- ^ A 'Statement' represents the result of an execution statement.
 data Statement = Statement
-  { _stId     :: !Int -- ^ The statement id.
-  , _stCode   :: !Text -- ^ The execution code.
-  , _stState  :: !StatementState -- ^ The execution state.
-  , _stOutput :: !StatementOutput -- ^ The execution output.
+  { _stId     :: !StatementId -- ^ The statement id.
+  , _stCode   :: !(Maybe Text) -- ^ The execution code.
+  , _stState  :: !(Maybe StatementState) -- ^ The execution state.
+  , _stOutput :: !(Maybe StatementOutput) -- ^ The execution output.
   } deriving (Eq, Show, Typeable)
 
 makeLenses ''Statement
-deriveJSON (recordPrefixOptions 3) ''Statement
+deriveJSON ((recordPrefixOptions 3) { omitNothingFields = True }) ''Statement

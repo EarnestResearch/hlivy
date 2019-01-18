@@ -2,10 +2,10 @@
 {-# LANGUAGE TypeFamilies    #-}
 
 module Network.Livy.Client.Interactive.CreateSession
-  ( -- * The request.
+  ( -- * The request
     CreateSession (..)
   , createSession
-   -- ** Request lenses.
+   -- ** Request lenses
   , csKind
   , csProxyUser
   , csJars
@@ -21,27 +21,33 @@ module Network.Livy.Client.Interactive.CreateSession
   , csName
   , csConf
   , csHeartbeatTimeoutInSecond
-    -- * The response.
+    -- * The response
   , CreateSessionResponse (..)
-    -- ** Response lenses.
+    -- ** Response lenses
   , csrSession
   ) where
 
-import Control.Lens
-import Data.Aeson
-import Data.Aeson.TH
-import Data.Text (Text)
-import Data.Typeable
+import           Control.Lens
+import           Data.Aeson.TH
+import qualified Data.HashMap.Strict as Map
+import           Data.Text (Text)
+import           Data.Typeable
 
-import Network.Livy.Client.Internal.JSON
-import Network.Livy.Client.Types.Session
-import Network.Livy.Request
-import Network.Livy.Types
+import           Network.Livy.Client.Internal.JSON
+import           Network.Livy.Client.Types.Session
+import           Network.Livy.Request
+import           Network.Livy.Types
+
+
+-- | Spark configuration properties.
+type SparkConf = Map.HashMap Text Text
 
 
 -- | The 'CreateSession' request object.
 data CreateSession = CreateSession
-  { _csKind                     :: SessionKind-- ^ The session kind.
+  { _csKind                     :: Maybe SessionKind
+  -- ^ The session kind. Note that, starting with Livy-0.5.0, this parameter is not required.
+  -- Instead, users should specify the session kind in statement creation.
   , _csProxyUser                :: Maybe Text -- ^ User to impersonate when starting the session.
   , _csJars                     :: Maybe [Text] -- ^ JARs to be used in this session.
   , _csPyFiles                  :: Maybe [Text] -- ^ Python files to be used in this session.
@@ -54,7 +60,7 @@ data CreateSession = CreateSession
   , _csArchives                 :: Maybe [Text] -- ^ Archives to be used in this session.
   , _csQueue                    :: Maybe Text  -- ^ The name of the YARN queue submitted to.
   , _csName                     :: Maybe Text -- ^ The name of this session.
-  , _csConf                     :: Maybe Object -- ^ Spark configuration properties.
+  , _csConf                     :: Maybe SparkConf -- ^ Spark configuration properties.
   , _csHeartbeatTimeoutInSecond :: Maybe Int -- ^ Timout in seconds after which to orphan the session.
   } deriving (Eq, Show, Typeable)
 
@@ -62,16 +68,16 @@ makeLenses ''CreateSession
 deriveToJSON ((recordPrefixOptions 3) { omitNothingFields = True }) ''CreateSession
 
 instance ToPath CreateSession where
-  toPath = const "/sessions"
+  toPath = const "sessions"
 
 instance LivyRequest CreateSession where
   request = postJSON
 
 
 -- | Creates a value of 'CreateSession' with the minimum fields required to make a request.
-createSession :: SessionKind -> CreateSession
-createSession k = CreateSession
-  { _csKind = k
+createSession :: CreateSession
+createSession = CreateSession
+  { _csKind = Nothing
   , _csProxyUser = Nothing
   , _csJars = Nothing
   , _csPyFiles = Nothing
@@ -91,9 +97,9 @@ createSession k = CreateSession
 
 -- | The 'CreateSession' response body.
 newtype CreateSessionResponse = CreateSessionResponse
-  {_csrSession :: Session -- ^ The created 'Session'.
+  { _csrSession :: Session -- ^ The created 'Session'.
   } deriving (Eq, Show, Typeable)
 
 makeLenses ''CreateSessionResponse
-deriveFromJSON (recordPrefixOptions 4) ''CreateSessionResponse
+deriveFromJSON (defaultOptions { unwrapUnaryRecords = True }) ''CreateSessionResponse
 type instance LivyResponse CreateSession = CreateSessionResponse

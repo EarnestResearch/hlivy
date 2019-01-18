@@ -2,52 +2,56 @@
 {-# LANGUAGE TypeFamilies    #-}
 
 module Network.Livy.Client.Interactive.RunStatementCompletion
-  ( -- * Request.
+  ( -- * The request
     RunStatementCompletion (..)
   , runStatementCompletion
-    -- ** Request lenses.
+    -- ** Request lenses
   , rscSessionId
   , rscCode
   , rscKind
   , rscCursor
-    -- * Response.
-  , RunStatementCompletionResponse
+    -- * The response
+  , RunStatementCompletionResponse (..)
+    -- ** Response lenses
   , rscrCandidates
   ) where
 
-import           Control.Lens
-import           Data.Aeson.TH
-import qualified Data.ByteString.Char8 as C
-import           Data.Text (Text)
-import           Data.Typeable
+import Control.Lens
+import Data.Aeson.TH
+import Data.Text (Text)
+import Data.Typeable
 
-import           Network.Livy.Client.Internal.JSON
-import           Network.Livy.Client.Types.Session
-import           Network.Livy.Request
-import           Network.Livy.Types
+import Network.Livy.Client.Internal.JSON
+import Network.Livy.Client.Types.Session
+import Network.Livy.Internal.Text
+import Network.Livy.Request
+import Network.Livy.Types
 
 
 -- | The 'RunStatementCompletion' request object.
 data RunStatementCompletion = RunStatementCompletion
-  { _rscSessionId :: Int -- ^ Id of the session.
+  { _rscSessionId :: SessionId -- ^ Id of the session.
   , _rscCode      :: Maybe Text -- ^ The code for which completion proposals are requested.
   , _rscKind      :: Maybe SessionKind -- ^ The kind of code to execute.
   , _rscCursor    :: Maybe Text -- ^ Cursor position to get proposals.
   } deriving (Eq, Show, Typeable)
 
 makeLenses ''RunStatementCompletion
-deriveToJSON (recordPrefixOptions 4) ''RunStatementCompletion
 
 instance ToPath RunStatementCompletion where
-  toPath r = C.pack $ "/sessions/" <> show (r ^. rscSessionId) <> "/completion"
+  toPath r = toPath ["sessions", toText $ r ^. rscSessionId, "completion"]
 
 instance LivyRequest RunStatementCompletion where
-  request = postJSON
+  request r = postBody r
+    [ ("code", toText $ r ^. rscCode)
+    , ("kind", toText $ r ^. rscKind)
+    , ("cursor", toText $ r ^. rscCursor)
+    ]
 
 
 -- | Creates a value of 'CancelStatement' with the minimum fields required to make a request.
-runStatementCompletion :: Int -> RunStatementCompletion
-runStatementCompletion n = RunStatementCompletion n Nothing Nothing Nothing
+runStatementCompletion :: SessionId -> RunStatementCompletion
+runStatementCompletion sid = RunStatementCompletion sid Nothing Nothing Nothing
 
 
 -- | The 'RunStatementCompletion' response body.

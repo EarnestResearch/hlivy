@@ -1,0 +1,21 @@
+name: examples
+version: '0.1.0.0'
+author: Daniel Donohue
+maintainer: ddonohue@earnestresearch.com
+copyright: 2018 Earnest Research
+license: BSD3
+homepage: https://github.com/EarnestResearch/examples
+
+dependencies:
+  - base
+  - hlivy
+  - lens
+
+library:
+  source-dirs: src
+  ghc-options:
+    - -Wall
+    - -fno-warn-type-defaults
+
+default-extensions:
+  - OverloadedStrings

@@ -2,15 +2,15 @@
 {-# LANGUAGE TypeFamilies    #-}
 
 module Network.Livy.Client.Interactive.GetSessions
-  ( -- * The request.
+  ( -- * The request
     GetSessions (..)
   , getSessions
-    -- ** Request lenses.
+    -- ** Request lenses
   , gssFrom
   , gssSize
-    -- * The request
+    -- * The response
   , GetSessionsResponse (..)
-    -- ** Response lenses.
+    -- ** Response lenses
   , gssrFrom
   , gssrSize
   , gssrSessions
@@ -19,6 +19,7 @@ module Network.Livy.Client.Interactive.GetSessions
 import           Control.Lens
 import           Data.Aeson.TH
 import qualified Data.ByteString.Char8 as C
+import           Data.Maybe (isJust)
 import           Data.Typeable
 
 import           Network.Livy.Client.Internal.JSON
@@ -36,12 +37,13 @@ data GetSessions = GetSessions
 makeLenses ''GetSessions
 
 instance ToPath GetSessions where
-  toPath = const "/sessions"
+  toPath = const "sessions"
 
 instance ToQuery GetSessions where
-  toQuery r = [ ("from", C.pack . show <$> r ^. gssFrom)
-              , ("size", C.pack . show <$> r ^. gssSize)
-              ]
+  toQueryString r = filter (isJust . snd)
+    [ ("from", C.pack . show <$> r ^. gssFrom)
+    , ("size", C.pack . show <$> r ^. gssSize)
+    ]
 
 instance LivyRequest GetSessions where
   request = getQuery
@@ -55,7 +57,7 @@ getSessions = GetSessions Nothing Nothing
 -- | The 'GetSessions' response body.
 data GetSessionsResponse = GetSessionsResponse
   { _gssrFrom     :: !Int -- ^ The start index to fetch sessions.
-  , _gssrSize     :: !Int -- ^ Number of sessions to fetch.
+  , _gssrSize     :: !(Maybe Int) -- ^ Number of sessions to fetch.
   , _gssrSessions :: ![Session] -- ^ 'Session' list.
   } deriving (Eq, Show, Typeable)
 

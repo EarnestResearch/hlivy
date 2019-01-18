@@ -1,11 +1,29 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies    #-}
 
-module Network.Livy.Types where
+module Network.Livy.Types
+  ( -- * Request/response types
+    LivyRequest (..)
+  , LivyResponse
+  , ToPath (..)
+  , ToQuery (..)
+    -- * Exceptions
+  , LivyError (..)
+  , LivyErrorType (..)
+  , LivyHTTPErrorCode (..)
+    -- ** Lenses
+  , leCode
+  , leMessage
+  , leResponseBody
+  , leType
+  ) where
 
 import           Control.Exception
 import           Control.Lens
 import qualified Data.ByteString as S
+import qualified Data.ByteString.Lazy as LBS
+import           Data.Text (Text)
+import qualified Data.Text.Encoding as T
 import           Data.Typeable
 import           Network.HTTP.Client
 import           Network.HTTP.Types
@@ -15,15 +33,13 @@ import           Network.HTTP.Types
 class ToPath a where
   toPath :: a -> S.ByteString
 
+instance ToPath Text where toPath = T.encodeUtf8
+instance ToPath a => ToPath [a] where toPath = S.intercalate "/" . fmap toPath
+
 
 -- | Specify how a value is converted to a collection of query parameters.
 class ToQuery a where
-  toQuery :: a -> Query
-
-
--- | Specify how a value is converted to a request body.
-class ToRequestBody a where
-  toRequestBody :: a -> RequestBody
+  toQueryString :: a -> Query
 
 
 -- | Specify how a request is created.
@@ -35,30 +51,13 @@ class LivyRequest a where
 type family LivyResponse a :: *
 
 
--- | Environment required to make requests to Livy.
-data Env = Env
-  { _envManager :: !Manager
-  , _envHost    :: !S.ByteString
-  , _envPort    :: !Int
-  }
-
-makeLenses ''Env
-
-
-class HasEnv a where
-  hasEnv :: a -> Env
-
-
-instance HasEnv Env where
-  hasEnv = id
-
-
 -- | Livy error types.
 data LivyErrorType
-  = InvalidRequest
-  | APIError
+  = APIError
   | ConnectionError
+  | InvalidRequest
   | ParseFailure
+  | TooManyRetries
   | UnknownErrorType
     deriving (Show, Typeable)
 
@@ -69,17 +68,21 @@ data LivyHTTPErrorCode
   | Unauthorized
   | RequestFailed
   | Forbidden
+  | BadMethod
   | NotFound
   | ServerError
-  | UnknownHTTPCode
+  | UnknownHTTPErrorCode
     deriving (Show, Typeable)
 
 
 -- | An error with Livy.
 data LivyError = LivyError
-  { leType    :: !LivyErrorType
-  , leMessage :: !S.ByteString
-  , leCode    :: !(Maybe LivyHTTPErrorCode)
+  { _leType         :: !LivyErrorType
+  , _leMessage      :: !S.ByteString
+  , _leResponseBody :: !(Maybe LBS.ByteString)
+  , _leCode         :: !(Maybe LivyHTTPErrorCode)
   } deriving (Show, Typeable)
+
+makeLenses ''LivyError
 
 instance Exception LivyError where

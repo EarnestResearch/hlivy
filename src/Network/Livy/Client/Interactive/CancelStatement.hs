@@ -1,41 +1,54 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies    #-}
 
-module Network.Livy.Client.Interactive.CancelStatement where
+module Network.Livy.Client.Interactive.CancelStatement
+  ( -- * The request
+    CancelStatement (..)
+  , cancelStatement
+    -- ** Request lensese
+  , cstmSessionId
+  , cstmStatementId
+    -- * The response
+  , CancelStatementResponse (..)
+    -- ** Response lenses
+  , csrMsg
+  ) where
 
-import           Control.Lens
-import           Data.Aeson.TH
-import qualified Data.ByteString.Char8 as C
-import           Data.Text (Text)
-import           Data.Typeable
+import Control.Lens
+import Data.Aeson.TH
+import Data.Text (Text)
+import Data.Typeable
 
-import           Network.Livy.Client.Internal.JSON
-import           Network.Livy.Request
-import           Network.Livy.Types
+import Network.Livy.Client.Internal.JSON
+import Network.Livy.Client.Types.Session
+import Network.Livy.Client.Types.Statement
+import Network.Livy.Internal.Text
+import Network.Livy.Request
+import Network.Livy.Types
 
 
 -- | The 'CancelStatement' request object.
 data CancelStatement = CancelStatement
-  { _cstmSessionId   :: Int -- ^ Id of the session.
-  , _cstmStatementId :: Int -- ^ Id of the statement.
+  { _cstmSessionId   :: SessionId -- ^ Id of the session.
+  , _cstmStatementId :: StatementId -- ^ Id of the statement.
   } deriving (Eq, Show, Typeable)
 
 makeLenses ''CancelStatement
 deriveToJSON (recordPrefixOptions 5) ''CancelStatement
 
 instance ToPath CancelStatement where
-  toPath r = C.pack $ "/sessions/"
-    <> show (r ^. cstmSessionId)
-    <> "/statements/"
-    <> show (r ^. cstmStatementId)
-    <> "/cancel"
+  toPath r = toPath
+    [ "sessions", toText $ r ^. cstmSessionId
+    , "statements", toText $ r ^. cstmStatementId
+    , "cancel"
+    ]
 
 instance LivyRequest CancelStatement where
-  request = postJSON
+  request = post
 
 
 -- | Creates a value of 'CancelStatement' with the minimum fields required to make a request.
-cancelStatement :: Int -> Int -> CancelStatement
+cancelStatement :: SessionId -> StatementId -> CancelStatement
 cancelStatement = CancelStatement
 
 

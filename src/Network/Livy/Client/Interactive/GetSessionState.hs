@@ -2,52 +2,52 @@
 {-# LANGUAGE TypeFamilies    #-}
 
 module Network.Livy.Client.Interactive.GetSessionState
-  ( -- * The request.
+  ( -- * The request
     GetSessionState (..)
   , getSessionState
-    -- ** Request lenses.
+    -- ** Request lenses
   , gsstSessionId
-    -- * The response.
+    -- * The response
   , GetSessionStateResponse (..)
-    -- ** Response lenses.
-  , gsstrSessionId
+    -- ** Response lenses
+  , gsstrId
   , gsstrState
   ) where
 
-import           Control.Lens
-import           Data.Aeson.TH
-import qualified Data.ByteString.Char8 as C
-import           Data.Typeable
+import Control.Lens
+import Data.Aeson.TH
+import Data.Typeable
 
-import           Network.Livy.Client.Internal.JSON
-import           Network.Livy.Client.Types.Session
-import           Network.Livy.Request
-import           Network.Livy.Types
+import Network.Livy.Client.Internal.JSON
+import Network.Livy.Client.Types.Session
+import Network.Livy.Internal.Text
+import Network.Livy.Request
+import Network.Livy.Types
 
 
 -- | The 'GetSessionState' request object.
 newtype GetSessionState = GetSessionState
-  { _gsstSessionId :: Int -- ^ Id of the session.
+  { _gsstSessionId :: SessionId -- ^ Id of the session.
   } deriving (Eq, Show, Typeable)
 
 makeLenses ''GetSessionState
 
 instance ToPath GetSessionState where
-  toPath r = C.pack $ "/sessions/" <> show (r ^. gsstSessionId) <> "/state"
+  toPath r = toPath ["sessions", toText $ r ^. gsstSessionId, "state"]
 
 instance LivyRequest GetSessionState where
   request = get
 
 
 -- | Creates a value of 'GetSessionState' with the minimum fields required to make a request.
-getSessionState :: Int -> GetSessionState
+getSessionState :: SessionId -> GetSessionState
 getSessionState = GetSessionState
 
 
 -- | The 'GetSessionState' response body.
 data GetSessionStateResponse = GetSessionStateResponse
-  { _gsstrSessionId :: !(Maybe Int) -- ^ Session id.
-  , _gsstrState     :: !(Maybe SessionState) -- ^ The current state of the session.
+  { _gsstrId    :: !SessionId -- ^ Session id.
+  , _gsstrState :: !SessionState -- ^ The current state of the session.
   } deriving (Eq, Show, Typeable)
 
 makeLenses ''GetSessionStateResponse

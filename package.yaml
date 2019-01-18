@@ -10,11 +10,13 @@ dependencies:
   - aeson
   - base
   - bytestring
+  - exceptions
   - http-client
   - http-conduit
   - http-types
   - lens
   - mtl
+  - resourcet
   - text
   - transformers
   - unordered-containers
