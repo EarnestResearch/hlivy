@@ -4,7 +4,7 @@ author: Daniel Donohue
 maintainer: ddonohue@earnestresearch.com
 copyright: 2018 Earnest Research
 license: BSD3
-homepage: https://github.com/EarnestResearch/examples
+homepage: https://github.com/EarnestResearch/hlivy/examples
 
 dependencies:
   - base

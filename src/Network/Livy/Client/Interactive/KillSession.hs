@@ -46,7 +46,7 @@ killSession = KillSession
 
 -- | The 'KillSession' response body.
 newtype KillSessionResponse = KillSessionResponse
-  { _ksrMsg :: Maybe Text -- ^ Message from the Livy server.
+  { _ksrMsg :: Text -- ^ Is always "deleted".
   } deriving (Eq, Show, Typeable)
 
 makeLenses ''KillSessionResponse

@@ -46,7 +46,7 @@ killBatch = KillBatch
 
 -- | The 'KillBatch' response body.
 newtype KillBatchResponse = KillBatchResponse
-  { _kbrMsg :: Maybe Text -- ^ Message from the Livy server.
+  { _kbrMsg :: Text -- ^ Is always "deleted".
   } deriving (Eq, Show, Typeable)
 
 makeLenses ''KillBatchResponse

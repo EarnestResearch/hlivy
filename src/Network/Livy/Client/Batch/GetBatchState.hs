@@ -16,7 +16,6 @@ module Network.Livy.Client.Batch.GetBatchState
 
 import Control.Lens
 import Data.Aeson.TH
-import Data.Text (Text)
 import Data.Typeable
 
 import Network.Livy.Client.Internal.JSON
@@ -48,7 +47,7 @@ getBatchState = GetBatchState
 -- | The 'GetBatchState' response body.
 data GetBatchStateResponse = GetBatchStateResponse
   { _gbstrId    :: !BatchId -- ^ Batch id.
-  , _gbstrState :: !Text -- ^ The current state of the batch session.
+  , _gbstrState :: !BatchState -- ^ The current state of the batch session.
   } deriving (Eq, Show, Typeable)
 
 makeLenses ''GetBatchStateResponse
