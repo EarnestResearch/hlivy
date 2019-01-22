@@ -23,6 +23,7 @@ module Network.Livy
     -- ** Batch session
   , Batch (..)
   , BatchId (..)
+  , BatchState (..)
   , BatchAppInfo
     -- *** Lenses
   , bId, bAppId, bAppInfo, bLog, bState
