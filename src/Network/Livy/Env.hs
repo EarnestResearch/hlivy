@@ -13,9 +13,9 @@ import           Network.HTTP.Client
 
 -- | Environment required to make requests to Livy.
 data Env = Env
-  { _envManager :: !Manager
-  , _envHost    :: !S.ByteString
-  , _envPort    :: !Int
+  { _envManager :: !Manager -- ^ HTTP manager.
+  , _envHost    :: !S.ByteString -- ^ The host name.
+  , _envPort    :: !Int -- ^ The port number.
   }
 
 

@@ -71,7 +71,7 @@ instance FromJSON BatchState where
   parseJSON = withText "BatchState" $ \t ->
     case lookup t toTextLookup of
       Just st -> return st
-      Nothing -> fail . T.unpack $ "Unknown session state: " <> t
+      Nothing -> fail . T.unpack $ "Unknown batch state: " <> t
 
 
 -- | A batch session with Livy.

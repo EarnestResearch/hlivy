@@ -53,11 +53,9 @@ type family LivyResponse a :: *
 
 -- | Livy error types.
 data LivyErrorType
-  = APIError
-  | ConnectionError
+  = ConnectionError
   | InvalidRequest
   | ParseFailure
-  | TooManyRetries
   | UnknownErrorType
     deriving (Show, Typeable)
 
