@@ -1,4 +1,8 @@
 # hlivy
+
+[![Build Status](https://travis-ci.com/EarnestResearch/hlivy.svg?branch=master)](https://travis-ci.org/EarnestResearch/hlivy)
+[![Hackage Version](https://img.shields.io/hackage/v/hlivy.svg)](https://hackage.haskell.org/package/hlivy)
+
 ## Description
 `hlivy` is a Haskell library that provides bindings to the [Apache Livy](https://livy.incubator.apache.org/) REST API, which enables one to easily launch Spark applications -- either in an interactive or batch fashion -- via HTTP requests to the Livy server running on the master node of a Spark cluster.
 
@@ -54,4 +58,4 @@ Batch actions are organized in the `Network.Livy.Client.Batch` module, and are u
 λ => req = createBatch "/user/hadoop/my-app.jar"
 λ => resp <- runLivy env (send req & cbClassName ?~ "com.company.my_app" ?~ cbExecutorCores ?~ 4)
 ```
-See [examples](examples/) for more example use.
+See [examples](https://github.com/EarnestResearch/hlivy/tree/1.0.0/examples/) for more example use.
