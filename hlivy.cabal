@@ -1,7 +1,7 @@
 name:               hlivy
 version:            1.0.0
-synopsis:           Client library for the Apache Livy REST API.
-description:        See README.md
+synopsis:           Client library for the Apache Livy REST API
+description:        Client library for the Apache Livy REST API -- see README.md
 category:           Distributed Computing
 homepage:           https://github.com/EarnestResearch/hlivy
 author:             Daniel Donohue <ddonohue@earnestresearch.com>
