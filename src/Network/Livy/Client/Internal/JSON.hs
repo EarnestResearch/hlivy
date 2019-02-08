@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 {-|
 Module      :  Network.Livy.Client.Internal.JSON
 Copyright   :  (C) 2019 Earnest Research
@@ -12,6 +14,9 @@ module Network.Livy.Client.Internal.JSON
   ) where
 
 import           Data.Aeson
+#if ! MIN_VERSION_base(4,12,0)
+import           Data.Monoid ((<>))
+#endif
 import qualified Data.Text as T
 
 
