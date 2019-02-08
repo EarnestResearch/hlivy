@@ -1,5 +1,5 @@
 name:               hlivy
-version:            1.0.0
+version:            1.0.1
 synopsis:           Client library for the Apache Livy REST API
 description:        Client library for the Apache Livy REST API -- see README.md
 category:           Distributed Computing
