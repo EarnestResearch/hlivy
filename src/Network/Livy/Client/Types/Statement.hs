@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TemplateHaskell            #-}
 
@@ -31,6 +32,9 @@ import           Control.Lens hiding ((.=))
 import           Data.Aeson
 import           Data.Aeson.TH
 import qualified Data.HashMap.Strict as Map
+#if ! MIN_VERSION_base(4,12,0)
+import           Data.Monoid ((<>))
+#endif
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Typeable
