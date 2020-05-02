@@ -56,6 +56,6 @@ Batch actions are organized in the `Network.Livy.Client.Batch` module, and are u
 λ => import Control.Lens
 λ => -- Application JAR in HDFS
 λ => req = createBatch "/user/hadoop/my-app.jar"
-λ => resp <- runLivy env (send req & cbClassName ?~ "com.company.my_app" ?~ cbExecutorCores ?~ 4)
+λ => resp <- runLivy env (send req & cbClassName ?~ "com.company.my_app" & cbExecutorCores ?~ 4)
 ```
 See [examples](https://github.com/EarnestResearch/hlivy/tree/1.0.0/examples/) for more example use.
